@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KNN interactivo</title>
+<style>
+  :root{color-scheme:dark;--bg1:#0b0f14;--bg2:#121923;--panel:#171e29;--border:#2a3545;--text:#e6edf3;--muted:#9fb0c3;--accent:#58a6ff;--btn:#1f2937;--btn-hover:#2b3647;--shadow:0 2px 12px rgba(0,0,0,.45)}
+  body{font-family:system-ui,-apple-system,sans-serif;margin:0;padding:24px;min-height:100vh;box-sizing:border-box;background:linear-gradient(180deg,var(--bg1),var(--bg2));background-attachment:fixed;color:var(--text)}
+  h1{font-size:22px;margin:0 0 4px;color:var(--text)}
+  .sub{color:var(--muted);font-size:14px;margin-bottom:16px}
+  .wrap{display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start}
+  .stage{position:relative}
+  #c{background:#0f141b;border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow);cursor:crosshair;display:block;max-width:100%;touch-action:none}
+  #tip{position:absolute;pointer-events:none;background:#e6edf3;color:#0b0f14;font-size:12px;padding:4px 7px;border-radius:4px;display:none;white-space:nowrap}
+  #c3{background:#0f141b;border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow);cursor:grab;display:none;max-width:100%;touch-action:none}
+  .panel{width:300px}
+  fieldset{border:1px solid var(--border);border-radius:8px;margin:0 0 12px;padding:10px 12px;background:var(--panel);box-shadow:var(--shadow)}
+  legend{font-size:13px;color:var(--muted);padding:0 4px;font-weight:600}
+  label{display:block;font-size:14px;margin:6px 0;cursor:pointer}
+  input[type=range],input[type=radio],input[type=checkbox]{accent-color:var(--accent)}
+  .dot{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:6px;vertical-align:middle}
+  button{padding:6px 10px;margin:2px 4px 2px 0;border:1px solid #3a4658;background:var(--btn);color:var(--text);border-radius:6px;cursor:pointer;font-size:13px}
+  button:hover{background:var(--btn-hover)}
+  button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  #out{font-size:14px;line-height:1.6;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:10px 12px;min-height:90px;box-shadow:var(--shadow)}
+  .note{font-size:13px;color:#f0c36d}
+  .hint{font-size:12px;color:var(--muted);line-height:1.4}
+  .steps{font-size:14px;line-height:1.5;max-width:800px;margin-top:24px;color:#c9d4e0}
+  code{background:#263041;color:var(--text);padding:1px 4px;border-radius:3px}
+  details.example{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-top:16px;box-shadow:var(--shadow)}
+  details.example summary{cursor:pointer;font-size:15px}
+  details.example ol{margin:10px 0 6px;padding-left:22px}
+  details.example li{margin-bottom:6px}
+</style>
+</head>
+<body>
+
+<h1>Algoritmo KNN (k vecinos más cercanos)</h1>
+<div class="sub">Con "Añadir k" seleccionado basta con mover el ratón por el mapa: la k se muestra donde esté el cursor (un clic la fija). Con una clase seleccionada, clic: añadir punto. Clic derecho: borrar el punto más cercano. Rueda del ratón: cambiar k.</div>
+
+<div class="wrap">
+  <div class="stage">
+    <canvas id="c" width="600" height="600" role="img" aria-label="Lienzo interactivo de KNN con puntos de tres clases y frontera de decisión para la k activa"></canvas>
+    <canvas id="c3" width="600" height="600" role="img" aria-label="Vista 3D de puntos con altura z y esfera de vecindad KNN"></canvas>
+    <div id="tip"></div>
+  </div>
+
+  <div class="panel">
+    <fieldset>
+      <legend>Acción al hacer clic</legend>
+      <label><input type="radio" name="mode" value="0" checked> <span class="dot" style="background:#E69F00"></span>Añadir Clase A (círculo)</label>
+      <label><input type="radio" name="mode" value="1"> <span class="dot" style="background:#56B4E9"></span>Añadir Clase B (cuadrado)</label>
+      <label><input type="radio" name="mode" value="2"> <span class="dot" style="background:#009E73"></span>Añadir Clase C (triángulo)</label>
+      <label><input type="radio" name="mode" value="3"> <span class="dot" style="background:#e6edf3"></span>Añadir k (sigue al ratón, clic la fija)</label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Parámetros</legend>
+      <label>k activa = <span id="kval">3</span>
+        <input type="range" id="k" min="1" max="15" value="3" style="width:100%">
+      </label>
+      <label><input type="checkbox" id="map" checked> Mostrar frontera de decisión</label>
+      <label><input type="checkbox" id="v3d"> Vista 3D (arrastra para girar 360°)</label>
+      <label><input type="checkbox" id="spin"> Giro automático (solo 3D)</label>
+      <label>Altura z = <span id="zval">0.50</span>
+        <input type="range" id="z" min="0" max="100" value="50" style="width:100%">
+      </label>
+      <div class="hint">En 3D la distancia usa x, y y z. La altura z se aplica a la consulta y a los puntos nuevos.</div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Datos</legend>
+      <button id="rand">Dataset aleatorio</button>
+      <button id="clr">Borrar puntos</button>
+      <button id="clq">Quitar consulta</button>
+      <button id="reset">Reiniciar</button>
+    </fieldset>
+
+    <div id="out"></div>
+  </div>
+</div>
+
+<div class="steps">
+  <p><b>Cómo funciona</b></p>
+  <ol>
+    <li>Se calcula la distancia euclídea entre el punto de consulta y cada punto de entrenamiento: <code>d = sqrt((x1-x2)^2 + (y1-y2)^2)</code>.</li>
+    <li>Se seleccionan los <b>k</b> puntos con menor distancia.</li>
+    <li>Se asigna la clase más frecuente entre esos k vecinos (votación mayoritaria).</li>
+  </ol>
+  <p>Con k=1 la frontera es muy irregular (sobreajuste). Con k alto se suaviza, pero se pierden detalles. La precisión leave-one-out mide, para cada punto, si acierta el algoritmo usando los demás; sirve para comparar valores de k.</p>
+  <p>El círculo punteado alrededor del punto de consulta es el radio de la vecindad: su radio es la distancia hasta el k-ésimo vecino, y los puntos que quedan dentro son los que votan.</p>
+  <p>En vista 3D cada punto tiene además una altura z y la distancia se calcula en 3D (x, y, z): la vecindad pasa a ser una esfera. La zona de color a la altura de la consulta es el corte de la frontera de decisión a esa z.</p>
+
+  <details class="example" open>
+    <summary><b>Ejemplo de uso</b></summary>
+    <ol>
+      <li>Pulsa <b>Reiniciar</b> (60 puntos, 20 por clase, k = 3) y selecciona <b>Añadir k</b>.</li>
+      <li>Mueve el ratón por la esquina superior derecha (80 % del ancho, 25 % del alto): predicción <b>B</b> con 3 votos de B y radio ≈ 0,12. Con k = 15 sigue siendo B, con los 15 votos.</li>
+      <li>Mueve el ratón al centro, donde se juntan las tres zonas (48 %, 52 %): con k = 1 gana <b>A</b>; con k = 3 gana <b>C</b> (A = 1, C = 2); con k = 9 gana <b>A</b> (A = 4, B = 2, C = 3). Cerca de una frontera la predicción cambia con k: usa la rueda del ratón.</li>
+      <li>Mira "Precisión leave-one-out" en el panel al cambiar k: k = 1 → 86,7 %; k = 3 → 91,7 %; k = 5 → 90,0 %; k = 9 → 88,3 %; k = 15 → 86,7 %. En este dataset k = 3 es la mejor de las probadas.</li>
+      <li>Haz clic para fijar la consulta en el centro y activa <b>Vista 3D</b>. Arrastra para girar 360° y mueve <b>Altura z</b>: con z = 0,20 la predicción es <b>A</b> (3 votos de A); con z = 0,50 es <b>C</b> (3 votos de C). Mismas x e y, otra clase: solo cambia la altura. En 3D la precisión leave-one-out con k = 3 es 98,3 %.</li>
+    </ol>
+    <div class="hint">Valores medidos con el dataset inicial (botón Reiniciar) y el cursor en el punto indicado; en otro punto los números variarán ligeramente.</div>
+  </details>
+</div>
+
+<script>
+const SIZE = 600, GRID = 100;
+// paleta Okabe-Ito: distinguible tambien con daltonismo
+const COLORS = ['#E69F00', '#56B4E9', '#009E73'];
+// tema oscuro del lienzo
+const THEME = {
+  grid: '#1b2430',      // rejilla de referencia
+  ink: '#e6edf3',       // trazos y texto principales
+  soft: '#9fb0c3',      // texto secundario y ejes
+  outline: '#0b0f14'    // contorno de los marcadores
+};
+const INK_RGB = '230,237,243';
+const NAMES = ['A', 'B', 'C'];
+const QUERY = 3;
+const MAX_K = 15;
+
+const state = {
+  points: [],   // {x, y, c} con coordenadas normalizadas en [0,1]
+  query: null,  // {x, y}
+  mode: 0,
+  k: 3,
+  showMap: true,
+  view3d: false,
+  yaw: 0.6,
+  pitch: 0.5,
+  spin: false,
+  qz: 0.5,
+  follow: true   // modo "Añadir k": la consulta sigue al raton hasta que un clic la fija
+};
+
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const dpr = window.devicePixelRatio || 1;
+canvas.width = SIZE * dpr;
+canvas.height = SIZE * dpr;
+canvas.style.width = SIZE + 'px';
+canvas.style.height = SIZE + 'px';
+
+// ---------- nucleo KNN ----------
+
+// devuelve los kk vecinos mas cercanos (distancia al cuadrado), ordenados
+function nearest(x, y, kk, exclude, z) {
+  if (z === undefined) z = state.qz;
+  const use3 = state.view3d;   // en vista 3D la distancia incluye la altura z
+  const best = [];
+  for (const p of state.points) {
+    if (p === exclude) continue;
+    let d = (p.x - x) * (p.x - x) + (p.y - y) * (p.y - y);
+    if (use3) d += (p.z - z) * (p.z - z);
+    if (best.length < kk) {
+      best.push({ p, d });
+      best.sort((a, b) => a.d - b.d);
+    } else if (d < best[kk - 1].d) {
+      best[kk - 1] = { p, d };
+      best.sort((a, b) => a.d - b.d);
+    }
+  }
+  return best;
+}
+
+function vote(nb) {
+  const cnt = [0, 0, 0];
+  for (const n of nb) cnt[n.p.c]++;
+  const max = Math.max(...cnt);
+  if (max === 0) return -1;
+  // empate: gana la clase del vecino mas cercano entre las empatadas
+  for (const n of nb) if (cnt[n.p.c] === max) return n.p.c;
+  return -1;
+}
+
+function predict(x, y, kk, exclude, z) {
+  return vote(nearest(x, y, kk, exclude, z));
+}
+
+function looAccuracy(kk) {
+  if (state.points.length < 2) return null;
+  let ok = 0;
+  for (const p of state.points) if (predict(p.x, p.y, kk, p, p.z) === p.c) ok++;
+  return ok / state.points.length;
+}
+
+// ---------- dibujo ----------
+
+function drawMarker(c2, x, y, r, c) {
+  c2.beginPath();
+  if (c === 0) {
+    c2.arc(x, y, r, 0, Math.PI * 2);
+  } else if (c === 1) {
+    c2.rect(x - r, y - r, 2 * r, 2 * r);
+  } else {
+    c2.moveTo(x, y - r * 1.2);
+    c2.lineTo(x + r * 1.1, y + r * 0.8);
+    c2.lineTo(x - r * 1.1, y + r * 0.8);
+    c2.closePath();
+  }
+  c2.fillStyle = COLORS[c];
+  c2.fill();
+  c2.strokeStyle = THEME.outline;
+  c2.lineWidth = 1.5;
+  c2.stroke();
+}
+
+function drawPoints(c2, s, r) {
+  for (const p of state.points) drawMarker(c2, p.x * s, p.y * s, r, p.c);
+}
+
+function drawRegions(c2, size, grid, kk) {
+  const cell = size / grid;
+  for (let i = 0; i < grid; i++) {
+    for (let j = 0; j < grid; j++) {
+      const c = predict((i + 0.5) / grid, (j + 0.5) / grid, kk);
+      if (c < 0) continue;
+      c2.fillStyle = COLORS[c] + '40';
+      c2.fillRect(i * cell, j * cell, cell + 1, cell + 1);
+    }
+  }
+}
+
+function draw() {
+  if (state.view3d) return;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, SIZE, SIZE);
+
+  // rejilla de referencia
+  ctx.strokeStyle = THEME.grid;
+  ctx.lineWidth = 1;
+  for (let g = 1; g < 10; g++) {
+    const t = Math.round(g * SIZE / 10) + 0.5;
+    ctx.beginPath();
+    ctx.moveTo(t, 0); ctx.lineTo(t, SIZE);
+    ctx.moveTo(0, t); ctx.lineTo(SIZE, t);
+    ctx.stroke();
+  }
+
+  if (state.showMap && state.points.length) drawRegions(ctx, SIZE, GRID, state.k);
+
+  const q = state.query;
+  const nb = q ? nearest(q.x, q.y, state.k) : [];
+
+  // radio de la vecindad: distancia de la consulta a su k-esimo vecino
+  if (q && nb.length) {
+    const rad = Math.sqrt(nb[nb.length - 1].d) * SIZE;
+    ctx.beginPath();
+    ctx.arc(q.x * SIZE, q.y * SIZE, rad, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(' + INK_RGB + ',0.07)';
+    ctx.fill();
+    ctx.strokeStyle = THEME.ink;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([6, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = THEME.ink;
+    ctx.font = 'bold 11px system-ui, sans-serif';
+    ctx.fillText('k=' + state.k, q.x * SIZE + 4, q.y * SIZE - rad - 4);
+  }
+
+  // lineas de la consulta a sus vecinos
+  if (q) {
+    ctx.lineWidth = 1.5;
+    for (const n of nb) {
+      ctx.strokeStyle = COLORS[n.p.c];
+      ctx.beginPath();
+      ctx.moveTo(q.x * SIZE, q.y * SIZE);
+      ctx.lineTo(n.p.x * SIZE, n.p.y * SIZE);
+      ctx.stroke();
+    }
+  }
+
+  drawPoints(ctx, SIZE, 7);
+
+  // anillo alrededor de los vecinos
+  for (const n of nb) {
+    ctx.beginPath();
+    ctx.arc(n.p.x * SIZE, n.p.y * SIZE, 11, 0, Math.PI * 2);
+    ctx.strokeStyle = THEME.ink;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([3, 3]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // consulta: circulo con el color de la prediccion y una cruz
+  if (q) {
+    const c = vote(nb);
+    const qx = q.x * SIZE, qy = q.y * SIZE;
+    ctx.beginPath();
+    ctx.arc(qx, qy, 11, 0, Math.PI * 2);
+    ctx.fillStyle = c >= 0 ? COLORS[c] : '#999';
+    ctx.fill();
+    ctx.strokeStyle = THEME.ink;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(qx - 5, qy - 5); ctx.lineTo(qx + 5, qy + 5);
+    ctx.moveTo(qx + 5, qy - 5); ctx.lineTo(qx - 5, qy + 5);
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = THEME.ink;
+  ctx.font = 'bold 16px system-ui, sans-serif';
+  ctx.fillText('k = ' + state.k, 12, 24);
+}
+
+// ---------- vista 3D ----------
+// KNN en 3 dimensiones: cada punto tiene (x, y, z) dentro del cubo unidad.
+// La consulta tiene una altura z ajustable y su vecindad es una esfera.
+const c3 = document.getElementById('c3');
+const ctx3 = c3.getContext('2d');
+c3.width = SIZE * dpr;
+c3.height = SIZE * dpr;
+c3.style.width = SIZE + 'px';
+c3.style.height = SIZE + 'px';
+
+const GRID3 = 32;
+const SCALE3 = 260;
+let slice3 = null;   // corte de la frontera a la altura de la consulta: [{c, conf}]
+
+function computeGrid3() {
+  if (!state.view3d) return;
+  slice3 = new Array(GRID3 * GRID3);
+  for (let i = 0; i < GRID3; i++) {
+    for (let j = 0; j < GRID3; j++) {
+      const nb = nearest((i + 0.5) / GRID3, (j + 0.5) / GRID3, state.k);
+      const c = vote(nb);
+      slice3[i * GRID3 + j] = {
+        c: c,
+        conf: c >= 0 ? nb.filter(n => n.p.c === c).length / nb.length : 0
+      };
+    }
+  }
+}
+
+// camara orbital: yaw sin limite (360 grados) y pitch de -90 a +90 grados
+// (pitch > 0: la camara mira desde arriba; pitch < 0: desde debajo del suelo)
+const cam = { cy: 1, sy: 0, cp: 1, sp: 0 };
+function setCam() {
+  cam.cy = Math.cos(state.yaw); cam.sy = Math.sin(state.yaw);
+  cam.cp = Math.cos(state.pitch); cam.sp = Math.sin(state.pitch);
+}
+
+// X, D en [-0.5, 0.5] (suelo) y H en [0, 1] (altura z); z mayor = mas lejos de la camara
+function project(X, H, D) {
+  const hh = H - 0.5;
+  const x1 = X * cam.cy + D * cam.sy;
+  const z1 = -X * cam.sy + D * cam.cy;
+  const y1 = hh * cam.cp + z1 * cam.sp;
+  const z2 = -hh * cam.sp + z1 * cam.cp;
+  const f = 5 / (5 + z2);
+  return { x: SIZE / 2 + x1 * SCALE3 * f, y: SIZE / 2 - y1 * SCALE3 * f, f: f, z: z2 };
+}
+
+// punto de datos (x, y, z en [0,1]) -> pantalla
+function P(x, y, z) {
+  return project(x - 0.5, z, y - 0.5);
+}
+
+function rgba(hex, a) {
+  const n = parseInt(hex.slice(1), 16);
+  return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+}
+
+function drawFloor(alpha) {
+  const c = [P(0, 0, 0), P(1, 0, 0), P(1, 1, 0), P(0, 1, 0)];
+  ctx3.beginPath();
+  c.forEach((p, i) => i ? ctx3.lineTo(p.x, p.y) : ctx3.moveTo(p.x, p.y));
+  ctx3.closePath();
+  ctx3.fillStyle = 'rgba(22,29,39,' + alpha + ')';
+  ctx3.fill();
+  ctx3.strokeStyle = 'rgba(52,66,84,0.9)';
+  ctx3.lineWidth = 1;
+  ctx3.beginPath();
+  for (let g = 1; g < 10; g++) {
+    const t = g / 10;
+    const a = P(t, 0, 0), b = P(t, 1, 0), e = P(0, t, 0), f = P(1, t, 0);
+    ctx3.moveTo(a.x, a.y); ctx3.lineTo(b.x, b.y);
+    ctx3.moveTo(e.x, e.y); ctx3.lineTo(f.x, f.y);
+  }
+  ctx3.stroke();
+  ctx3.strokeStyle = '#4b5d73';
+  ctx3.lineWidth = 1.5;
+  ctx3.beginPath();
+  c.forEach((p, i) => i ? ctx3.lineTo(p.x, p.y) : ctx3.moveTo(p.x, p.y));
+  ctx3.closePath();
+  ctx3.stroke();
+}
+
+// aristas del cubo: dan referencia de orientacion al girar
+function drawBox() {
+  const t = [P(0, 0, 1), P(1, 0, 1), P(1, 1, 1), P(0, 1, 1)];
+  const b = [P(0, 0, 0), P(1, 0, 0), P(1, 1, 0), P(0, 1, 0)];
+  ctx3.strokeStyle = 'rgba(130,150,175,0.5)';
+  ctx3.lineWidth = 1;
+  ctx3.beginPath();
+  for (let i = 0; i < 4; i++) {
+    const n = (i + 1) % 4;
+    ctx3.moveTo(t[i].x, t[i].y); ctx3.lineTo(t[n].x, t[n].y);
+    ctx3.moveTo(b[i].x, b[i].y); ctx3.lineTo(t[i].x, t[i].y);
+  }
+  ctx3.stroke();
+}
+
+// eje z en la esquina mas lejana a la camara, con marcas en 0, 0.5 y 1
+function drawAxis3() {
+  let best = null;
+  for (const [x, y] of [[0, 0], [1, 0], [1, 1], [0, 1]]) {
+    const z = P(x, y, 0).z;
+    if (!best || z > best.z) best = { x: x, y: y, z: z };
+  }
+  const p0 = P(best.x, best.y, 0), p1 = P(best.x, best.y, 1);
+  ctx3.strokeStyle = THEME.soft;
+  ctx3.fillStyle = THEME.soft;
+  ctx3.lineWidth = 1.5;
+  ctx3.beginPath();
+  ctx3.moveTo(p0.x, p0.y); ctx3.lineTo(p1.x, p1.y);
+  ctx3.stroke();
+  ctx3.font = '11px system-ui, sans-serif';
+  ctx3.textAlign = 'right';
+  for (const v of [0, 0.5, 1]) {
+    const p = P(best.x, best.y, v);
+    ctx3.beginPath();
+    ctx3.moveTo(p.x - 4, p.y); ctx3.lineTo(p.x + 4, p.y);
+    ctx3.stroke();
+    ctx3.fillText(String(v), p.x - 7, p.y + 4);
+  }
+  ctx3.fillText('z', p1.x - 7, p1.y - 8);
+  ctx3.textAlign = 'left';
+}
+
+// corte de la frontera de decision a la altura z de la consulta
+function drawSlice() {
+  if (!slice3 || !state.showMap || !state.points.length) return;
+  const H = state.qz;
+  const quads = [];
+  for (let i = 0; i < GRID3; i++) {
+    for (let j = 0; j < GRID3; j++) {
+      const g = slice3[i * GRID3 + j];
+      if (g.c < 0) continue;
+      const x0 = i / GRID3, x1 = (i + 1) / GRID3, y0 = j / GRID3, y1 = (j + 1) / GRID3;
+      const pts = [P(x0, y0, H), P(x1, y0, H), P(x1, y1, H), P(x0, y1, H)];
+      quads.push({ pts: pts, z: (pts[0].z + pts[1].z + pts[2].z + pts[3].z) / 4, g: g });
+    }
+  }
+  quads.sort((a, b) => b.z - a.z);
+  for (const q of quads) {
+    ctx3.beginPath();
+    q.pts.forEach((p, i) => i ? ctx3.lineTo(p.x, p.y) : ctx3.moveTo(p.x, p.y));
+    ctx3.closePath();
+    ctx3.fillStyle = rgba(COLORS[q.g.c], 0.16 + 0.26 * q.g.conf);
+    ctx3.fill();
+  }
+  // borde del plano de corte
+  const e = [P(0, 0, H), P(1, 0, H), P(1, 1, H), P(0, 1, H)];
+  ctx3.beginPath();
+  e.forEach((p, i) => i ? ctx3.lineTo(p.x, p.y) : ctx3.moveTo(p.x, p.y));
+  ctx3.closePath();
+  ctx3.strokeStyle = 'rgba(' + INK_RGB + ',0.35)';
+  ctx3.lineWidth = 1;
+  ctx3.setLineDash([4, 4]);
+  ctx3.stroke();
+  ctx3.setLineDash([]);
+}
+
+// puntos a su propia altura, con linea vertical y sombra en el suelo para leer la z
+function drawPoints3d() {
+  const items = state.points.map(p => ({ p: p, a: P(p.x, p.y, p.z), b: P(p.x, p.y, 0) }));
+  items.sort((u, v) => v.a.z - u.a.z);
+  ctx3.lineWidth = 1;
+  for (const it of items) {
+    ctx3.strokeStyle = 'rgba(159,176,195,0.3)';
+    ctx3.beginPath();
+    ctx3.moveTo(it.b.x, it.b.y); ctx3.lineTo(it.a.x, it.a.y);
+    ctx3.stroke();
+    ctx3.beginPath();
+    ctx3.arc(it.b.x, it.b.y, 2.5 * it.b.f, 0, Math.PI * 2);
+    ctx3.fillStyle = rgba(COLORS[it.p.c], 0.35);
+    ctx3.fill();
+  }
+  for (const it of items) drawMarker(ctx3, it.a.x, it.a.y, 5.5 * it.a.f + 1, it.p.c);
+}
+
+function ring3(fn) {
+  ctx3.beginPath();
+  for (let a = 0; a <= 72; a++) {
+    const t = a / 72 * Math.PI * 2;
+    const p = fn(t);
+    if (a) ctx3.lineTo(p.x, p.y); else ctx3.moveTo(p.x, p.y);
+  }
+  ctx3.stroke();
+}
+
+function drawQuery3d() {
+  const q = state.query;
+  if (!q) return;
+  const nb = nearest(q.x, q.y, state.k);
+  const c = vote(nb);
+  const qp = P(q.x, q.y, state.qz), qb = P(q.x, q.y, 0);
+
+  // esfera de la vecindad: radio = distancia 3D al k-esimo vecino
+  if (nb.length) {
+    const r = Math.sqrt(nb[nb.length - 1].d);
+    ctx3.beginPath();
+    ctx3.arc(qp.x, qp.y, r * SCALE3 * qp.f, 0, Math.PI * 2);
+    ctx3.fillStyle = 'rgba(' + INK_RGB + ',0.06)';
+    ctx3.fill();
+    ctx3.strokeStyle = 'rgba(' + INK_RGB + ',0.55)';
+    ctx3.lineWidth = 1.2;
+    ctx3.setLineDash([5, 4]);
+    ctx3.stroke();
+    ring3(t => P(q.x + r * Math.cos(t), q.y + r * Math.sin(t), state.qz));
+    ring3(t => P(q.x + r * Math.cos(t), q.y, state.qz + r * Math.sin(t)));
+    ring3(t => P(q.x, q.y + r * Math.cos(t), state.qz + r * Math.sin(t)));
+    ctx3.setLineDash([]);
+  }
+
+  // lineas y anillos hacia los k vecinos
+  ctx3.lineWidth = 1.5;
+  for (const n of nb) {
+    const np = P(n.p.x, n.p.y, n.p.z);
+    ctx3.strokeStyle = COLORS[n.p.c];
+    ctx3.beginPath();
+    ctx3.moveTo(qp.x, qp.y); ctx3.lineTo(np.x, np.y);
+    ctx3.stroke();
+    ctx3.beginPath();
+    ctx3.arc(np.x, np.y, 8 * np.f + 3, 0, Math.PI * 2);
+    ctx3.strokeStyle = THEME.ink;
+    ctx3.lineWidth = 1.2;
+    ctx3.setLineDash([3, 3]);
+    ctx3.stroke();
+    ctx3.setLineDash([]);
+    ctx3.lineWidth = 1.5;
+  }
+
+  // linea vertical de la consulta al suelo y su sombra
+  ctx3.strokeStyle = THEME.ink;
+  ctx3.lineWidth = 1.2;
+  ctx3.setLineDash([4, 3]);
+  ctx3.beginPath();
+  ctx3.moveTo(qb.x, qb.y); ctx3.lineTo(qp.x, qp.y);
+  ctx3.stroke();
+  ctx3.setLineDash([]);
+  ctx3.beginPath();
+  ctx3.arc(qb.x, qb.y, 3 * qb.f, 0, Math.PI * 2);
+  ctx3.fillStyle = 'rgba(' + INK_RGB + ',0.5)';
+  ctx3.fill();
+
+  // marcador de la consulta
+  ctx3.beginPath();
+  ctx3.arc(qp.x, qp.y, 10, 0, Math.PI * 2);
+  ctx3.fillStyle = c >= 0 ? COLORS[c] : '#999';
+  ctx3.fill();
+  ctx3.strokeStyle = THEME.ink;
+  ctx3.lineWidth = 2;
+  ctx3.stroke();
+  ctx3.beginPath();
+  ctx3.moveTo(qp.x - 4, qp.y - 4); ctx3.lineTo(qp.x + 4, qp.y + 4);
+  ctx3.moveTo(qp.x + 4, qp.y - 4); ctx3.lineTo(qp.x - 4, qp.y + 4);
+  ctx3.stroke();
+}
+
+function draw3d() {
+  if (!state.view3d) return;
+  setCam();
+  ctx3.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx3.clearRect(0, 0, SIZE, SIZE);
+
+  const below = state.pitch < 0;       // vista desde debajo: el suelo se dibuja encima y translucido
+  if (!below) drawFloor(1);
+  drawBox();
+  drawAxis3();
+  drawSlice();
+  drawPoints3d();
+  drawQuery3d();
+  if (below) drawFloor(0.45);
+
+  ctx3.textAlign = 'left';
+  ctx3.fillStyle = THEME.ink;
+  ctx3.font = 'bold 16px system-ui, sans-serif';
+  ctx3.fillText('k = ' + state.k, 12, 24);
+  ctx3.font = '12px system-ui, sans-serif';
+  for (let c = 0; c < 3; c++) {
+    const lx = SIZE - 110 + c * 36;
+    drawMarker(ctx3, lx, 20, 6, c);
+    ctx3.fillStyle = THEME.ink;
+    ctx3.fillText(NAMES[c], lx + 11, 24);
+  }
+  ctx3.fillStyle = THEME.soft;
+  ctx3.fillText('esfera = vecindad de la consulta (radio: distancia 3D al vecino k)', 12, SIZE - 28);
+  ctx3.fillText('arrastra: girar 360° · rueda: k · doble clic: restablecer · deslizador: altura z', 12, SIZE - 12);
+}
+
+// arrastrar para girar sin limite horizontal; vertical de -86 a +86 grados
+const PITCH_MAX = 1.5;
+let drag3 = null;
+c3.addEventListener('pointerdown', e => {
+  drag3 = { x: e.clientX, y: e.clientY };
+  c3.setPointerCapture(e.pointerId);
+  c3.style.cursor = 'grabbing';
+});
+c3.addEventListener('pointermove', e => {
+  if (!drag3) return;
+  state.yaw += (e.clientX - drag3.x) * 0.01;
+  state.pitch = Math.min(PITCH_MAX, Math.max(-PITCH_MAX, state.pitch + (e.clientY - drag3.y) * 0.01));
+  drag3 = { x: e.clientX, y: e.clientY };
+  draw3d();
+});
+function endDrag3() { drag3 = null; c3.style.cursor = 'grab'; }
+c3.addEventListener('pointerup', endDrag3);
+c3.addEventListener('pointercancel', endDrag3);
+c3.addEventListener('dblclick', () => { state.yaw = 0.6; state.pitch = 0.5; draw3d(); });
+c3.addEventListener('wheel', e => {
+  e.preventDefault();
+  setK(state.k + (e.deltaY < 0 ? 1 : -1));
+}, { passive: false });
+
+// giro automatico
+let spinRaf = null;
+function spinLoop() {
+  spinRaf = null;
+  if (!(state.view3d && state.spin)) return;
+  if (!drag3) state.yaw += 0.01;
+  draw3d();
+  spinRaf = requestAnimationFrame(spinLoop);
+}
+function updateSpin() {
+  if (state.view3d && state.spin && spinRaf === null) spinRaf = requestAnimationFrame(spinLoop);
+}
+
+function updateInfo() {
+  const q = state.query;
+  const lines = [];
+  lines.push('Puntos: <b>' + state.points.length + '</b> · k activa: <b>' + state.k + '</b>');
+  const acc = looAccuracy(state.k);
+  lines.push('Precisión leave-one-out (k=' + state.k + '): <b>' + (acc === null ? '-' : (acc * 100).toFixed(1) + '%') + '</b>');
+  if (q && state.mode === QUERY && !state.follow) {
+    lines.push('<span class="note">Consulta fijada: haz clic en el mapa para volver a moverla.</span>');
+  }
+  if (state.view3d) lines.push('Modo 3D (x, y, z) · altura de la consulta z = <b>' + state.qz.toFixed(2) + '</b>');
+  if (state.k % 2 === 0) {
+    lines.push('<span class="note">k par: puede haber empates; se resuelven con el vecino más cercano.</span>');
+  }
+
+  if (q) {
+    const nb = nearest(q.x, q.y, state.k);
+    const cnt = [0, 0, 0];
+    nb.forEach(n => cnt[n.p.c]++);
+    const c = vote(nb);
+    lines.push('Votos (k=' + state.k + '): A=' + cnt[0] + ' · B=' + cnt[1] + ' · C=' + cnt[2]);
+    lines.push('Predicción: <b style="color:' + (c >= 0 ? COLORS[c] : '#999') + '">' + (c >= 0 ? 'Clase ' + NAMES[c] : 'sin datos') + '</b>');
+    if (nb.length) lines.push('Radio de la vecindad: <b>' + Math.sqrt(nb[nb.length - 1].d).toFixed(3) + '</b> (distancia al vecino ' + nb.length + ')');
+    lines.push('Distancias: ' + (nb.length ? nb.map(n => Math.sqrt(n.d).toFixed(3) + ' (' + NAMES[n.p.c] + ')').join(', ') : '-'));
+  }
+
+  document.getElementById('out').innerHTML = lines.join('<br>');
+}
+
+function syncControls() {
+  document.getElementById('v3d').checked = state.view3d;
+  document.getElementById('spin').checked = state.spin;
+  document.getElementById('z').value = Math.round(state.qz * 100);
+  document.getElementById('zval').textContent = state.qz.toFixed(2);
+  updateSpin();
+  canvas.style.display = state.view3d ? 'none' : 'block';
+  c3.style.display = state.view3d ? 'block' : 'none';
+  if (state.view3d) tip.style.display = 'none';
+  document.getElementById('k').value = state.k;
+  document.getElementById('kval').textContent = state.k;
+  document.getElementById('map').checked = state.showMap;
+}
+
+function refresh() {
+  computeGrid3();
+  draw();
+  draw3d();
+  updateInfo();
+  syncControls();
+}
+
+// durante el arrastre solo cambia la consulta: un unico redibujado por fotograma
+let qRaf = null;
+function refreshLight() {
+  if (qRaf !== null) return;
+  qRaf = requestAnimationFrame(() => {
+    qRaf = null;
+    draw();
+    draw3d();
+    updateInfo();
+  });
+}
+
+function setK(v) {
+  state.k = Math.min(MAX_K, Math.max(1, v));
+  refresh();
+}
+
+// ---------- entrada del raton ----------
+
+function pos(e) {
+  const r = canvas.getBoundingClientRect();
+  const cl = v => Math.min(1, Math.max(0, v));
+  return { x: cl((e.clientX - r.left) / r.width), y: cl((e.clientY - r.top) / r.height) };
+}
+
+// modo "Añadir k": la consulta sigue al raton sin hacer clic; con raton, un clic la fija y otro la suelta
+// (con pantalla tactil sigue al dedo)
+canvas.addEventListener('pointerdown', e => {
+  if (e.button !== 0) return;   // el clic derecho borra puntos
+  const p = pos(e);
+  if (state.mode === QUERY) {
+    state.follow = e.pointerType === 'mouse' ? !state.follow : true;
+    if (state.follow) state.query = p;   // al soltarla salta al cursor; al fijarla se queda donde estaba
+  } else {
+    state.points.push({ x: p.x, y: p.y, z: state.qz, c: state.mode });
+  }
+  refresh();
+});
+canvas.addEventListener('pointermove', e => {
+  if (state.mode !== QUERY || !state.follow) return;
+  state.query = pos(e);
+  refreshLight();
+});
+
+canvas.addEventListener('contextmenu', e => {
+  e.preventDefault();
+  const p = pos(e);
+  let best = -1, bestD = 0.025 * 0.025;
+  state.points.forEach((pt, i) => {
+    const d = (pt.x - p.x) * (pt.x - p.x) + (pt.y - p.y) * (pt.y - p.y);
+    if (d < bestD) { bestD = d; best = i; }
+  });
+  if (best >= 0) state.points.splice(best, 1);
+  refresh();
+});
+
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  setK(state.k + (e.deltaY < 0 ? 1 : -1));
+}, { passive: false });
+
+const tip = document.getElementById('tip');
+canvas.addEventListener('mousemove', e => {
+  if (!state.points.length || state.mode === QUERY) { tip.style.display = 'none'; return; }
+  const p = pos(e);
+  const c = predict(p.x, p.y, state.k);
+  tip.textContent = 'k=' + state.k + ' → ' + (c >= 0 ? 'Clase ' + NAMES[c] : 'sin datos');
+  tip.style.display = 'block';
+  tip.style.left = (e.offsetX + 14) + 'px';
+  tip.style.top = (e.offsetY + 14) + 'px';
+});
+canvas.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+
+// ---------- controles ----------
+
+document.querySelectorAll('input[name=mode]').forEach(r =>
+  r.addEventListener('change', e => {
+    state.mode = Number(e.target.value);
+    if (state.mode === QUERY) state.follow = true;
+  })
+);
+
+document.getElementById('k').addEventListener('input', e => setK(Number(e.target.value)));
+document.getElementById('map').addEventListener('change', e => { state.showMap = e.target.checked; refresh(); });
+document.getElementById('v3d').addEventListener('change', e => { state.view3d = e.target.checked; refresh(); });
+document.getElementById('spin').addEventListener('change', e => { state.spin = e.target.checked; refresh(); });
+document.getElementById('z').addEventListener('input', e => { state.qz = Number(e.target.value) / 100; refresh(); });
+
+document.getElementById('clr').onclick = () => { state.points = []; refresh(); };
+document.getElementById('clq').onclick = () => { state.query = null; refresh(); };
+document.getElementById('rand').onclick = () => { generateClusters(); refresh(); };
+document.getElementById('reset').onclick = () => { resetState(); refresh(); };
+
+// ---------- datos ----------
+
+// generador pseudoaleatorio con semilla (mulberry32): misma semilla, mismo dataset
+function rng(seed) {
+  return function () {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+function gauss(R) {
+  let u = 0, v = 0;
+  while (u === 0) u = R();
+  while (v === 0) v = R();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+
+function clamp01(v) {
+  return Math.min(0.98, Math.max(0.02, v));
+}
+
+// 3 grupos gaussianos en posiciones aleatorias
+function generateClusters(R = Math.random) {
+  state.points = [];
+  state.query = null;
+  const centers = [];
+  for (let c = 0; c < 3; c++) {
+    centers.push({ x: 0.15 + R() * 0.7, y: 0.15 + R() * 0.7, z: 0.2 + R() * 0.6 });
+  }
+  for (let c = 0; c < 3; c++) {
+    for (let i = 0; i < 25; i++) {
+      state.points.push({
+        x: clamp01(centers[c].x + gauss(R) * 0.09),
+        y: clamp01(centers[c].y + gauss(R) * 0.09),
+        z: clamp01(centers[c].z + gauss(R) * 0.08),
+        c: c
+      });
+    }
+  }
+}
+
+// division simple en 3 zonas (forma de Y) alrededor de un centro; cada zona = una clase
+function generateDivision(R) {
+  state.points = [];
+  state.query = null;
+  const cx = 0.48, cy = 0.52;
+  const counts = [0, 0, 0];
+  let guard = 0;
+  while ((counts[0] < 20 || counts[1] < 20 || counts[2] < 20) && guard++ < 100000) {
+    const x = R(), y = R();
+    const a = Math.atan2(y - cy, x - cx) * 180 / Math.PI; // y crece hacia abajo
+    let c;
+    if (a >= -90 && a < 46) c = 1;        // arriba-derecha
+    else if (a >= 46 && a < 135) c = 2;   // abajo
+    else c = 0;                            // izquierda
+    if (counts[c] < 20) {
+      counts[c]++;
+      state.points.push({ x: clamp01(x), y: clamp01(y), c: c });
+    }
+  }
+  // altura z por clase, con algo de dispersion: las clases tambien se separan en 3D
+  const zc = [0.2, 0.75, 0.5];
+  for (const p of state.points) p.z = clamp01(zc[p.c] + gauss(R) * 0.08);
+}
+
+// estado inicial y reinicio: dataset fijo, parametros por defecto
+function resetState() {
+  generateDivision(rng(42));
+  state.k = 3;
+  state.showMap = true;
+  state.view3d = false;
+  state.yaw = 0.6;
+  state.pitch = 0.5;
+  state.spin = false;
+  state.qz = 0.5;
+  state.follow = true;
+  state.mode = 0;
+  document.querySelector('input[name=mode][value="0"]').checked = true;
+}
+
+resetState();
+refresh();
+</script>
+</body>
+</html>
