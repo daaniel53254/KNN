@@ -6,40 +6,47 @@
 <title>KNN interactivo</title>
 <style>
   :root{color-scheme:dark;--bg1:#0b0f14;--bg2:#121923;--panel:#171e29;--border:#2a3545;--text:#e6edf3;--muted:#9fb0c3;--accent:#58a6ff;--btn:#1f2937;--btn-hover:#2b3647;--shadow:0 2px 12px rgba(0,0,0,.45)}
-  body{font-family:system-ui,-apple-system,sans-serif;margin:0;padding:24px;min-height:100vh;box-sizing:border-box;background:linear-gradient(180deg,var(--bg1),var(--bg2));background-attachment:fixed;color:var(--text)}
-  h1{font-size:22px;margin:0 0 4px;color:var(--text)}
-  .sub{color:var(--muted);font-size:14px;margin-bottom:16px}
-  .wrap{display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start}
+  body{font-family:system-ui,-apple-system,sans-serif;margin:0;padding:14px 18px;min-height:100vh;box-sizing:border-box;background:linear-gradient(180deg,var(--bg1),var(--bg2));background-attachment:fixed;color:var(--text)}
+  header{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:10px}
+  h1{font-size:20px;margin:0;color:var(--text)}
+  .sub{color:var(--muted);font-size:13px;flex:1;min-width:260px}
+  .main{display:grid;grid-template-columns:minmax(0,620px) 270px minmax(280px,1fr);gap:14px;align-items:start}
   .stage{position:relative}
-  #c{background:#0f141b;border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow);cursor:crosshair;display:block;max-width:100%;touch-action:none}
+  #c,#c3{width:100%;height:auto;aspect-ratio:1/1;background:#0f141b;border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow);touch-action:none;box-sizing:border-box}
+  #c{cursor:crosshair;display:block}
+  #c3{cursor:grab;display:none}
   #tip{position:absolute;pointer-events:none;background:#e6edf3;color:#0b0f14;font-size:12px;padding:4px 7px;border-radius:4px;display:none;white-space:nowrap}
-  #c3{background:#0f141b;border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow);cursor:grab;display:none;max-width:100%;touch-action:none}
-  .panel{width:300px}
-  fieldset{border:1px solid var(--border);border-radius:8px;margin:0 0 12px;padding:10px 12px;background:var(--panel);box-shadow:var(--shadow)}
-  legend{font-size:13px;color:var(--muted);padding:0 4px;font-weight:600}
-  label{display:block;font-size:14px;margin:6px 0;cursor:pointer}
+  fieldset{border:1px solid var(--border);border-radius:8px;margin:0 0 10px;padding:6px 10px 8px;background:var(--panel);box-shadow:var(--shadow);min-width:0}
+  legend{font-size:12px;color:var(--muted);padding:0 4px;font-weight:600}
+  label{display:block;font-size:13px;margin:4px 0;cursor:pointer}
   input[type=range],input[type=radio],input[type=checkbox]{accent-color:var(--accent)}
-  .dot{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:6px;vertical-align:middle}
-  button{padding:6px 10px;margin:2px 4px 2px 0;border:1px solid #3a4658;background:var(--btn);color:var(--text);border-radius:6px;cursor:pointer;font-size:13px}
+  .dot{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:6px;vertical-align:middle}
+  button{padding:5px 9px;margin:2px 4px 2px 0;border:1px solid #3a4658;background:var(--btn);color:var(--text);border-radius:6px;cursor:pointer;font-size:12px}
   button:hover{background:var(--btn-hover)}
+  button.primary{border-color:var(--accent);color:var(--accent)}
   button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-  #out{font-size:14px;line-height:1.6;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:10px 12px;min-height:90px;box-shadow:var(--shadow)}
-  .note{font-size:13px;color:#f0c36d}
+  #out{font-size:13px;line-height:1.55;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:8px 12px;min-height:90px;box-shadow:var(--shadow)}
+  .note{font-size:12px;color:#f0c36d}
   .hint{font-size:12px;color:var(--muted);line-height:1.4}
-  .steps{font-size:14px;line-height:1.5;max-width:800px;margin-top:24px;color:#c9d4e0}
+  .info{min-width:0;font-size:13px;line-height:1.5;color:#c9d4e0}
+  .info p{margin:8px 0}
   code{background:#263041;color:var(--text);padding:1px 4px;border-radius:3px}
-  details.example{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-top:16px;box-shadow:var(--shadow)}
-  details.example summary{cursor:pointer;font-size:15px}
-  details.example ol{margin:10px 0 6px;padding-left:22px}
-  details.example li{margin-bottom:6px}
+  details{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:7px 12px;margin-top:10px;box-shadow:var(--shadow)}
+  details summary{cursor:pointer;font-size:14px}
+  details ol{margin:8px 0 4px;padding-left:20px}
+  details li{margin-bottom:5px}
+  @media (max-width:1180px){.main{grid-template-columns:minmax(0,620px) minmax(240px,1fr)}.info{grid-column:1/-1}}
+  @media (max-width:700px){.main{grid-template-columns:minmax(0,1fr)}}
 </style>
 </head>
 <body>
 
-<h1>Algoritmo KNN (k vecinos más cercanos)</h1>
-<div class="sub">Con "Añadir k" seleccionado basta con mover el ratón por el mapa: la k se muestra donde esté el cursor (un clic la fija). Con una clase seleccionada, clic: añadir punto. Clic derecho: borrar el punto más cercano. Rueda del ratón: cambiar k.</div>
+<header>
+  <h1>Algoritmo KNN (k vecinos más cercanos)</h1>
+  <div class="sub">Con "Añadir k" basta con mover el ratón por el mapa (un clic fija la consulta). Con una clase seleccionada, clic: añadir punto. Clic derecho: borrar el más cercano. Rueda: cambiar k.</div>
+</header>
 
-<div class="wrap">
+<div class="main">
   <div class="stage">
     <canvas id="c" width="600" height="600" role="img" aria-label="Lienzo interactivo de KNN con puntos de tres clases y frontera de decisión para la k activa"></canvas>
     <canvas id="c3" width="600" height="600" role="img" aria-label="Vista 3D de puntos con altura z y esfera de vecindad KNN"></canvas>
@@ -49,9 +56,9 @@
   <div class="panel">
     <fieldset>
       <legend>Acción al hacer clic</legend>
-      <label><input type="radio" name="mode" value="0" checked> <span class="dot" style="background:#E69F00"></span>Añadir Clase A (círculo)</label>
-      <label><input type="radio" name="mode" value="1"> <span class="dot" style="background:#56B4E9"></span>Añadir Clase B (cuadrado)</label>
-      <label><input type="radio" name="mode" value="2"> <span class="dot" style="background:#009E73"></span>Añadir Clase C (triángulo)</label>
+      <label><input type="radio" name="mode" value="0" checked> <span class="dot" style="background:#E69F00"></span>Añadir <span id="mn0">Clase A</span> (círculo)</label>
+      <label><input type="radio" name="mode" value="1"> <span class="dot" style="background:#56B4E9"></span>Añadir <span id="mn1">Clase B</span> (cuadrado)</label>
+      <label><input type="radio" name="mode" value="2"> <span class="dot" style="background:#009E73"></span>Añadir <span id="mn2">Clase C</span> (triángulo)</label>
       <label><input type="radio" name="mode" value="3"> <span class="dot" style="background:#e6edf3"></span>Añadir k (sigue al ratón, clic la fija)</label>
     </fieldset>
 
@@ -63,46 +70,61 @@
       <label><input type="checkbox" id="map" checked> Mostrar frontera de decisión</label>
       <label><input type="checkbox" id="v3d"> Vista 3D (arrastra para girar 360°)</label>
       <label><input type="checkbox" id="spin"> Giro automático (solo 3D)</label>
-      <label>Altura z = <span id="zval">0.50</span>
+      <label><span id="zname">Altura z</span> = <span id="zval">0.50</span>
         <input type="range" id="z" min="0" max="100" value="50" style="width:100%">
       </label>
-      <div class="hint">En 3D la distancia usa x, y y z. La altura z se aplica a la consulta y a los puntos nuevos.</div>
+      <div class="hint">En 3D la distancia usa x, y y z. La z se aplica a la consulta y a los puntos nuevos.</div>
     </fieldset>
 
     <fieldset>
       <legend>Datos</legend>
+      <button id="iris" class="primary">Caso real: Iris</button>
+      <button id="reset">Reiniciar</button>
       <button id="rand">Dataset aleatorio</button>
       <button id="clr">Borrar puntos</button>
       <button id="clq">Quitar consulta</button>
-      <button id="reset">Reiniciar</button>
     </fieldset>
-
-    <div id="out"></div>
   </div>
-</div>
 
-<div class="steps">
-  <p><b>Cómo funciona</b></p>
-  <ol>
-    <li>Se calcula la distancia euclídea entre el punto de consulta y cada punto de entrenamiento: <code>d = sqrt((x1-x2)^2 + (y1-y2)^2)</code>.</li>
-    <li>Se seleccionan los <b>k</b> puntos con menor distancia.</li>
-    <li>Se asigna la clase más frecuente entre esos k vecinos (votación mayoritaria).</li>
-  </ol>
-  <p>Con k=1 la frontera es muy irregular (sobreajuste). Con k alto se suaviza, pero se pierden detalles. La precisión leave-one-out mide, para cada punto, si acierta el algoritmo usando los demás; sirve para comparar valores de k.</p>
-  <p>El círculo punteado alrededor del punto de consulta es el radio de la vecindad: su radio es la distancia hasta el k-ésimo vecino, y los puntos que quedan dentro son los que votan.</p>
-  <p>En vista 3D cada punto tiene además una altura z y la distancia se calcula en 3D (x, y, z): la vecindad pasa a ser una esfera. La zona de color a la altura de la consulta es el corte de la frontera de decisión a esa z.</p>
+  <div class="info">
+    <div id="out"></div>
 
-  <details class="example" open>
-    <summary><b>Ejemplo de uso</b></summary>
-    <ol>
-      <li>Pulsa <b>Reiniciar</b> (60 puntos, 20 por clase, k = 3) y selecciona <b>Añadir k</b>.</li>
-      <li>Mueve el ratón por la esquina superior derecha (80 % del ancho, 25 % del alto): predicción <b>B</b> con 3 votos de B y radio ≈ 0,12. Con k = 15 sigue siendo B, con los 15 votos.</li>
-      <li>Mueve el ratón al centro, donde se juntan las tres zonas (48 %, 52 %): con k = 1 gana <b>A</b>; con k = 3 gana <b>C</b> (A = 1, C = 2); con k = 9 gana <b>A</b> (A = 4, B = 2, C = 3). Cerca de una frontera la predicción cambia con k: usa la rueda del ratón.</li>
-      <li>Mira "Precisión leave-one-out" en el panel al cambiar k: k = 1 → 86,7 %; k = 3 → 91,7 %; k = 5 → 90,0 %; k = 9 → 88,3 %; k = 15 → 86,7 %. En este dataset k = 3 es la mejor de las probadas.</li>
-      <li>Haz clic para fijar la consulta en el centro y activa <b>Vista 3D</b>. Arrastra para girar 360° y mueve <b>Altura z</b>: con z = 0,20 la predicción es <b>A</b> (3 votos de A); con z = 0,50 es <b>C</b> (3 votos de C). Mismas x e y, otra clase: solo cambia la altura. En 3D la precisión leave-one-out con k = 3 es 98,3 %.</li>
-    </ol>
-    <div class="hint">Valores medidos con el dataset inicial (botón Reiniciar) y el cursor en el punto indicado; en otro punto los números variarán ligeramente.</div>
-  </details>
+    <details class="example" open>
+      <summary><b>Caso real: clasificar una flor (Iris)</b></summary>
+      <p>Pulsa <b>Caso real: Iris</b>. Son 150 flores medidas por Fisher (1936), 50 de cada especie: Setosa, Versicolor y Virginica. Cada punto es una flor: x = largo del pétalo (cm), y = ancho del pétalo (cm), z = largo del sépalo (cm, solo 3D). Las medidas se normalizan a [0,1] por eje (mínimo-máximo) para que todas pesen igual en la distancia.</p>
+      <p>Uso real: un botánico mide el pétalo de una flor sin etiquetar y KNN estima su especie comparándola con las 150 conocidas.</p>
+      <ol>
+        <li>Selecciona <b>Añadir k</b> (ya viene marcado) y mueve el ratón. Pétalo de 1,5 × 0,2 cm: <b>Setosa</b>, 5 votos de 5 con k = 5; la vecindad es mínima porque hay muchas flores casi idénticas.</li>
+        <li>Pétalo de 4,6 × 1,4 cm: <b>Versicolor</b> (5 de 5 con k = 5). Pétalo de 5,8 × 2,0 cm: <b>Virginica</b> (5 de 5 con k = 5; radio normalizado 0,054).</li>
+        <li>Zona ambigua, pétalo de 4,8 × 1,8 cm: con k = 1 sale <b>Versicolor</b> (una flor con esas medidas exactas); con k = 5 sale <b>Virginica</b> (4 votos contra 1); con k = 15 sigue <b>Virginica</b> (12 contra 3). Cambia k con la rueda y mira cómo se mueve la consulta entre las dos especies.</li>
+        <li>Precisión leave-one-out (150 flores): k = 1 → 96,0 %; k = 3 → 96,0 %; k = 5 → 96,7 %; k = 9 → 96,0 %; k = 15 → 96,0 %. La diferencia entre k es de una sola flor (145 aciertos frente a 144), así que en Iris casi cualquier k sirve. Setosa se separa sin errores; los fallos están entre Versicolor y Virginica.</li>
+        <li>Fija la consulta en el punto ambiguo (clic) y activa <b>Vista 3D</b>: el largo del sépalo pasa a ser la tercera medida y se ajusta con el deslizador. Con k = 3, un sépalo de 5,5 cm da <b>Virginica</b> (3 votos de 3) y uno de 7,0 cm da <b>Versicolor</b> (3 de 3). La precisión leave-one-out en 3D con k = 3 es 96,7 %, sin mejora clara frente a 2D (96,0 %). Los errores de k = 5 en 2D: 0 en Setosa, 2 en Versicolor, 3 en Virginica.</li>
+      </ol>
+      <div class="hint">Valores medidos con el código de esta página; el cursor da posiciones aproximadas, así que en tu pantalla pueden variar ligeramente.</div>
+    </details>
+
+    <details>
+      <summary><b>Cómo funciona</b></summary>
+      <ol>
+        <li>Se calcula la distancia euclídea entre la consulta y cada punto de entrenamiento: <code>d = sqrt((x1-x2)^2 + (y1-y2)^2)</code>.</li>
+        <li>Se seleccionan los <b>k</b> puntos con menor distancia.</li>
+        <li>Se asigna la clase más frecuente entre esos k vecinos (votación mayoritaria; en empate, la del vecino más cercano).</li>
+      </ol>
+      <p>Con k=1 la frontera es irregular (sobreajuste); con k alto se suaviza y se pierden detalles. La precisión leave-one-out mide, para cada punto, si acierta el algoritmo usando los demás; sirve para comparar valores de k.</p>
+      <p>El círculo punteado es el radio de la vecindad: la distancia hasta el k-ésimo vecino. En 3D cada punto tiene una altura z, la distancia se calcula en (x, y, z) y la vecindad es una esfera; la zona de color es el corte de la frontera a la z de la consulta.</p>
+    </details>
+
+    <details>
+      <summary><b>Ejemplo con el dataset de demostración</b></summary>
+      <ol>
+        <li>Pulsa <b>Reiniciar</b> (60 puntos, 20 por clase, k = 3) y selecciona <b>Añadir k</b>.</li>
+        <li>Mueve el ratón por la esquina superior derecha (80 % del ancho, 25 % del alto): predicción <b>B</b> con 3 votos de B y radio ≈ 0,12. Con k = 15 sigue siendo B, con los 15 votos.</li>
+        <li>Mueve el ratón al centro, donde se juntan las tres zonas (48 %, 52 %): con k = 1 gana <b>A</b>; con k = 3 gana <b>C</b> (A = 1, C = 2); con k = 9 gana <b>A</b> (A = 4, B = 2, C = 3). Cerca de una frontera la predicción cambia con k: usa la rueda del ratón.</li>
+        <li>Precisión leave-one-out al cambiar k: k = 1 → 86,7 %; k = 3 → 91,7 %; k = 5 → 90,0 %; k = 9 → 88,3 %; k = 15 → 86,7 %. En este dataset k = 3 es la mejor de las probadas.</li>
+        <li>Fija la consulta en el centro y activa <b>Vista 3D</b>. Con z = 0,20 la predicción es <b>A</b> (3 votos de A); con z = 0,50 es <b>C</b> (3 votos de C). Mismas x e y, otra clase: solo cambia la altura. En 3D la precisión leave-one-out con k = 3 es 98,3 %.</li>
+      </ol>
+    </details>
+  </div>
 </div>
 
 <script>
@@ -117,7 +139,21 @@ const THEME = {
   outline: '#0b0f14'    // contorno de los marcadores
 };
 const INK_RGB = '230,237,243';
-const NAMES = ['A', 'B', 'C'];
+// metadatos del dataset activo: nombres de clase, ejes con unidades reales (solo en Iris) y tamano de marcador
+const META_DEMO = { name: 'Demo: puntos abstractos (clases A, B, C)', classes: ['A', 'B', 'C'], axes: null, r: 7 };
+const IRIS_M = 0.09;   // margen del lienzo: los valores reales se normalizan a [IRIS_M, 1 - IRIS_M]
+const META_IRIS = {
+  name: 'Iris (Fisher, 1936): 150 flores, 3 especies',
+  classes: ['Setosa', 'Versicolor', 'Virginica'],
+  r: 4.5,
+  axes: {
+    x: { label: 'Largo del pétalo', unit: 'cm', min: 1, max: 6.9, ticks: [1, 2, 3, 4, 5, 6] },
+    y: { label: 'Ancho del pétalo', unit: 'cm', min: 0.1, max: 2.5, ticks: [0.5, 1, 1.5, 2, 2.5] },
+    z: { label: 'Largo del sépalo', unit: 'cm', min: 4.3, max: 7.9, ticks: [5, 6, 7] }
+  }
+};
+let META = META_DEMO;
+let NAMES = META.classes;
 const QUERY = 3;
 const MAX_K = 15;
 
@@ -140,8 +176,6 @@ const ctx = canvas.getContext('2d');
 const dpr = window.devicePixelRatio || 1;
 canvas.width = SIZE * dpr;
 canvas.height = SIZE * dpr;
-canvas.style.width = SIZE + 'px';
-canvas.style.height = SIZE + 'px';
 
 // ---------- nucleo KNN ----------
 
@@ -223,6 +257,67 @@ function drawRegions(c2, size, grid, kk) {
   }
 }
 
+// normalizado [0,1] <-> valor real. En y el lienzo crece hacia abajo, asi que se invierte.
+function norm(ax, v) {
+  const a = META.axes[ax];
+  return IRIS_M + (1 - 2 * IRIS_M) * (v - a.min) / (a.max - a.min);
+}
+function realValue(ax, n) {
+  const a = META.axes[ax];
+  return a.min + (n - IRIS_M) / (1 - 2 * IRIS_M) * (a.max - a.min);
+}
+function fmt(ax, n) {   // coordenada del lienzo -> texto con unidad
+  return realValue(ax, ax === 'y' ? 1 - n : n).toFixed(1) + ' ' + META.axes[ax].unit;
+}
+function cLabel(c) { return META.axes ? NAMES[c] : 'Clase ' + NAMES[c]; }
+function dims(x, y) {   // "1.5 x 0.2 cm" (vacio en el dataset de demostracion)
+  if (!META.axes) return '';
+  return realValue('x', x).toFixed(1) + ' × ' + realValue('y', 1 - y).toFixed(1) + ' ' + META.axes.x.unit;
+}
+
+function drawLegend(c2) {
+  c2.font = '12px system-ui, sans-serif';
+  c2.textAlign = 'left';
+  const w = NAMES.map(n => c2.measureText(n).width + 28);
+  let x = SIZE - 12 - w.reduce((a, b) => a + b, 0);
+  for (let c = 0; c < 3; c++) {
+    drawMarker(c2, x + 6, 20, 6, c);
+    c2.fillStyle = THEME.ink;
+    c2.fillText(NAMES[c], x + 17, 24);
+    x += w[c];
+  }
+}
+
+// marcas y titulos de los ejes con unidades reales (solo Iris)
+function drawAxes2d() {
+  if (!META.axes) return;
+  const ax = META.axes;
+  ctx.fillStyle = THEME.soft;
+  ctx.strokeStyle = THEME.soft;
+  ctx.lineWidth = 1;
+  ctx.font = '11px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  for (const v of ax.x.ticks) {
+    const px = norm('x', v) * SIZE;
+    ctx.beginPath(); ctx.moveTo(px, SIZE * (1 - IRIS_M) + 2); ctx.lineTo(px, SIZE * (1 - IRIS_M) + 7); ctx.stroke();
+    ctx.fillText(String(v), px, SIZE - 30);
+  }
+  ctx.fillText(ax.x.label + ' (' + ax.x.unit + ')', SIZE / 2, SIZE - 10);
+  ctx.textAlign = 'right';
+  for (const v of ax.y.ticks) {
+    const py = (1 - norm('y', v)) * SIZE;
+    ctx.beginPath(); ctx.moveTo(SIZE * IRIS_M - 7, py); ctx.lineTo(SIZE * IRIS_M - 2, py); ctx.stroke();
+    ctx.fillText(String(v), SIZE * IRIS_M - 11, py + 4);
+  }
+  ctx.save();
+  ctx.translate(12, SIZE / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.textAlign = 'center';
+  ctx.fillText(ax.y.label + ' (' + ax.y.unit + ')', 0, 0);
+  ctx.restore();
+  ctx.textAlign = 'left';
+}
+
 function draw() {
   if (state.view3d) return;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -240,6 +335,7 @@ function draw() {
   }
 
   if (state.showMap && state.points.length) drawRegions(ctx, SIZE, GRID, state.k);
+  drawAxes2d();
 
   const q = state.query;
   const nb = q ? nearest(q.x, q.y, state.k) : [];
@@ -273,12 +369,12 @@ function draw() {
     }
   }
 
-  drawPoints(ctx, SIZE, 7);
+  drawPoints(ctx, SIZE, META.r);
 
   // anillo alrededor de los vecinos
   for (const n of nb) {
     ctx.beginPath();
-    ctx.arc(n.p.x * SIZE, n.p.y * SIZE, 11, 0, Math.PI * 2);
+    ctx.arc(n.p.x * SIZE, n.p.y * SIZE, META.r + 4, 0, Math.PI * 2);
     ctx.strokeStyle = THEME.ink;
     ctx.lineWidth = 1.5;
     ctx.setLineDash([3, 3]);
@@ -305,7 +401,9 @@ function draw() {
 
   ctx.fillStyle = THEME.ink;
   ctx.font = 'bold 16px system-ui, sans-serif';
+  ctx.textAlign = 'left';
   ctx.fillText('k = ' + state.k, 12, 24);
+  drawLegend(ctx);
 }
 
 // ---------- vista 3D ----------
@@ -315,8 +413,6 @@ const c3 = document.getElementById('c3');
 const ctx3 = c3.getContext('2d');
 c3.width = SIZE * dpr;
 c3.height = SIZE * dpr;
-c3.style.width = SIZE + 'px';
-c3.style.height = SIZE + 'px';
 
 const GRID3 = 32;
 const SCALE3 = 260;
@@ -422,14 +518,16 @@ function drawAxis3() {
   ctx3.stroke();
   ctx3.font = '11px system-ui, sans-serif';
   ctx3.textAlign = 'right';
-  for (const v of [0, 0.5, 1]) {
-    const p = P(best.x, best.y, v);
+  const az = META.axes && META.axes.z;
+  const ticks = az ? az.ticks.map(v => ({ v: v, h: norm('z', v) })) : [0, 0.5, 1].map(v => ({ v: v, h: v }));
+  for (const t of ticks) {
+    const p = P(best.x, best.y, t.h);
     ctx3.beginPath();
     ctx3.moveTo(p.x - 4, p.y); ctx3.lineTo(p.x + 4, p.y);
     ctx3.stroke();
-    ctx3.fillText(String(v), p.x - 7, p.y + 4);
+    ctx3.fillText(String(t.v), p.x - 7, p.y + 4);
   }
-  ctx3.fillText('z', p1.x - 7, p1.y - 8);
+  ctx3.fillText(az ? az.label + ' (' + az.unit + ')' : 'z', p1.x - 7, p1.y - 8);
   ctx3.textAlign = 'left';
 }
 
@@ -482,7 +580,7 @@ function drawPoints3d() {
     ctx3.fillStyle = rgba(COLORS[it.p.c], 0.35);
     ctx3.fill();
   }
-  for (const it of items) drawMarker(ctx3, it.a.x, it.a.y, 5.5 * it.a.f + 1, it.p.c);
+  for (const it of items) drawMarker(ctx3, it.a.x, it.a.y, META.r * 0.8 * it.a.f + 1, it.p.c);
 }
 
 function ring3(fn) {
@@ -583,14 +681,13 @@ function draw3d() {
   ctx3.fillStyle = THEME.ink;
   ctx3.font = 'bold 16px system-ui, sans-serif';
   ctx3.fillText('k = ' + state.k, 12, 24);
+  drawLegend(ctx3);
   ctx3.font = '12px system-ui, sans-serif';
-  for (let c = 0; c < 3; c++) {
-    const lx = SIZE - 110 + c * 36;
-    drawMarker(ctx3, lx, 20, 6, c);
-    ctx3.fillStyle = THEME.ink;
-    ctx3.fillText(NAMES[c], lx + 11, 24);
-  }
   ctx3.fillStyle = THEME.soft;
+  if (META.axes) {
+    const a = META.axes;
+    ctx3.fillText('x = ' + a.x.label.toLowerCase() + ' · y = ' + a.y.label.toLowerCase() + ' · z = ' + a.z.label.toLowerCase() + ' (' + a.x.unit + ')', 12, SIZE - 44);
+  }
   ctx3.fillText('esfera = vecindad de la consulta (radio: distancia 3D al vecino k)', 12, SIZE - 28);
   ctx3.fillText('arrastra: girar 360° · rueda: k · doble clic: restablecer · deslizador: altura z', 12, SIZE - 12);
 }
@@ -635,13 +732,18 @@ function updateSpin() {
 function updateInfo() {
   const q = state.query;
   const lines = [];
+  lines.push('<span class="hint">Dataset: ' + META.name + '</span>');
   lines.push('Puntos: <b>' + state.points.length + '</b> · k activa: <b>' + state.k + '</b>');
   const acc = looAccuracy(state.k);
   lines.push('Precisión leave-one-out (k=' + state.k + '): <b>' + (acc === null ? '-' : (acc * 100).toFixed(1) + '%') + '</b>');
   if (q && state.mode === QUERY && !state.follow) {
     lines.push('<span class="note">Consulta fijada: haz clic en el mapa para volver a moverla.</span>');
   }
-  if (state.view3d) lines.push('Modo 3D (x, y, z) · altura de la consulta z = <b>' + state.qz.toFixed(2) + '</b>');
+  if (state.view3d) {
+    lines.push(META.axes
+      ? 'Modo 3D (pétalo + sépalo) · ' + META.axes.z.label.toLowerCase() + ' de la consulta = <b>' + fmt('z', state.qz) + '</b>'
+      : 'Modo 3D (x, y, z) · altura de la consulta z = <b>' + state.qz.toFixed(2) + '</b>');
+  }
   if (state.k % 2 === 0) {
     lines.push('<span class="note">k par: puede haber empates; se resuelven con el vecino más cercano.</span>');
   }
@@ -651,8 +753,11 @@ function updateInfo() {
     const cnt = [0, 0, 0];
     nb.forEach(n => cnt[n.p.c]++);
     const c = vote(nb);
-    lines.push('Votos (k=' + state.k + '): A=' + cnt[0] + ' · B=' + cnt[1] + ' · C=' + cnt[2]);
-    lines.push('Predicción: <b style="color:' + (c >= 0 ? COLORS[c] : '#999') + '">' + (c >= 0 ? 'Clase ' + NAMES[c] : 'sin datos') + '</b>');
+    if (META.axes) {
+      lines.push('Flor consultada: pétalo <b>' + dims(q.x, q.y) + '</b>' + (state.view3d ? ' · sépalo <b>' + fmt('z', state.qz) + '</b>' : ''));
+    }
+    lines.push('Votos (k=' + state.k + '): ' + NAMES.map((n, i) => n + '=' + cnt[i]).join(' · '));
+    lines.push((META.axes ? 'Especie predicha: ' : 'Predicción: ') + '<b style="color:' + (c >= 0 ? COLORS[c] : '#999') + '">' + (c >= 0 ? cLabel(c) : 'sin datos') + '</b>');
     if (nb.length) lines.push('Radio de la vecindad: <b>' + Math.sqrt(nb[nb.length - 1].d).toFixed(3) + '</b> (distancia al vecino ' + nb.length + ')');
     lines.push('Distancias: ' + (nb.length ? nb.map(n => Math.sqrt(n.d).toFixed(3) + ' (' + NAMES[n.p.c] + ')').join(', ') : '-'));
   }
@@ -664,7 +769,8 @@ function syncControls() {
   document.getElementById('v3d').checked = state.view3d;
   document.getElementById('spin').checked = state.spin;
   document.getElementById('z').value = Math.round(state.qz * 100);
-  document.getElementById('zval').textContent = state.qz.toFixed(2);
+  document.getElementById('zval').textContent = META.axes ? fmt('z', state.qz) : state.qz.toFixed(2);
+  document.getElementById('zname').textContent = META.axes ? META.axes.z.label : 'Altura z';
   updateSpin();
   canvas.style.display = state.view3d ? 'none' : 'block';
   c3.style.display = state.view3d ? 'block' : 'none';
@@ -748,7 +854,7 @@ canvas.addEventListener('mousemove', e => {
   if (!state.points.length || state.mode === QUERY) { tip.style.display = 'none'; return; }
   const p = pos(e);
   const c = predict(p.x, p.y, state.k);
-  tip.textContent = 'k=' + state.k + ' → ' + (c >= 0 ? 'Clase ' + NAMES[c] : 'sin datos');
+  tip.textContent = 'k=' + state.k + ' → ' + (c >= 0 ? cLabel(c) : 'sin datos') + (META.axes ? ' (' + dims(p.x, p.y) + ')' : '');
   tip.style.display = 'block';
   tip.style.left = (e.offsetX + 14) + 'px';
   tip.style.top = (e.offsetY + 14) + 'px';
@@ -772,7 +878,8 @@ document.getElementById('z').addEventListener('input', e => { state.qz = Number(
 
 document.getElementById('clr').onclick = () => { state.points = []; refresh(); };
 document.getElementById('clq').onclick = () => { state.query = null; refresh(); };
-document.getElementById('rand').onclick = () => { generateClusters(); refresh(); };
+document.getElementById('rand').onclick = () => { setMeta(META_DEMO); generateClusters(); refresh(); };
+document.getElementById('iris').onclick = () => { loadIris(); refresh(); };
 document.getElementById('reset').onclick = () => { resetState(); refresh(); };
 
 // ---------- datos ----------
@@ -842,8 +949,65 @@ function generateDivision(R) {
   for (const p of state.points) p.z = clamp01(zc[p.c] + gauss(R) * 0.08);
 }
 
+// Iris (Fisher, 1936; UCI / scikit-learn): [largo petalo, ancho petalo, largo sepalo, especie 0-2] en cm
+const IRIS_DATA = [
+  [1.4,0.2,5.1,0],[1.4,0.2,4.9,0],[1.3,0.2,4.7,0],[1.5,0.2,4.6,0],[1.4,0.2,5,0],[1.7,0.4,5.4,0],
+  [1.4,0.3,4.6,0],[1.5,0.2,5,0],[1.4,0.2,4.4,0],[1.5,0.1,4.9,0],[1.5,0.2,5.4,0],[1.6,0.2,4.8,0],
+  [1.4,0.1,4.8,0],[1.1,0.1,4.3,0],[1.2,0.2,5.8,0],[1.5,0.4,5.7,0],[1.3,0.4,5.4,0],[1.4,0.3,5.1,0],
+  [1.7,0.3,5.7,0],[1.5,0.3,5.1,0],[1.7,0.2,5.4,0],[1.5,0.4,5.1,0],[1,0.2,4.6,0],[1.7,0.5,5.1,0],
+  [1.9,0.2,4.8,0],[1.6,0.2,5,0],[1.6,0.4,5,0],[1.5,0.2,5.2,0],[1.4,0.2,5.2,0],[1.6,0.2,4.7,0],
+  [1.6,0.2,4.8,0],[1.5,0.4,5.4,0],[1.5,0.1,5.2,0],[1.4,0.2,5.5,0],[1.5,0.2,4.9,0],[1.2,0.2,5,0],
+  [1.3,0.2,5.5,0],[1.4,0.1,4.9,0],[1.3,0.2,4.4,0],[1.5,0.2,5.1,0],[1.3,0.3,5,0],[1.3,0.3,4.5,0],
+  [1.3,0.2,4.4,0],[1.6,0.6,5,0],[1.9,0.4,5.1,0],[1.4,0.3,4.8,0],[1.6,0.2,5.1,0],[1.4,0.2,4.6,0],
+  [1.5,0.2,5.3,0],[1.4,0.2,5,0],[4.7,1.4,7,1],[4.5,1.5,6.4,1],[4.9,1.5,6.9,1],[4,1.3,5.5,1],
+  [4.6,1.5,6.5,1],[4.5,1.3,5.7,1],[4.7,1.6,6.3,1],[3.3,1,4.9,1],[4.6,1.3,6.6,1],[3.9,1.4,5.2,1],
+  [3.5,1,5,1],[4.2,1.5,5.9,1],[4,1,6,1],[4.7,1.4,6.1,1],[3.6,1.3,5.6,1],[4.4,1.4,6.7,1],
+  [4.5,1.5,5.6,1],[4.1,1,5.8,1],[4.5,1.5,6.2,1],[3.9,1.1,5.6,1],[4.8,1.8,5.9,1],[4,1.3,6.1,1],
+  [4.9,1.5,6.3,1],[4.7,1.2,6.1,1],[4.3,1.3,6.4,1],[4.4,1.4,6.6,1],[4.8,1.4,6.8,1],[5,1.7,6.7,1],
+  [4.5,1.5,6,1],[3.5,1,5.7,1],[3.8,1.1,5.5,1],[3.7,1,5.5,1],[3.9,1.2,5.8,1],[5.1,1.6,6,1],
+  [4.5,1.5,5.4,1],[4.5,1.6,6,1],[4.7,1.5,6.7,1],[4.4,1.3,6.3,1],[4.1,1.3,5.6,1],[4,1.3,5.5,1],
+  [4.4,1.2,5.5,1],[4.6,1.4,6.1,1],[4,1.2,5.8,1],[3.3,1,5,1],[4.2,1.3,5.6,1],[4.2,1.2,5.7,1],
+  [4.2,1.3,5.7,1],[4.3,1.3,6.2,1],[3,1.1,5.1,1],[4.1,1.3,5.7,1],[6,2.5,6.3,2],[5.1,1.9,5.8,2],
+  [5.9,2.1,7.1,2],[5.6,1.8,6.3,2],[5.8,2.2,6.5,2],[6.6,2.1,7.6,2],[4.5,1.7,4.9,2],[6.3,1.8,7.3,2],
+  [5.8,1.8,6.7,2],[6.1,2.5,7.2,2],[5.1,2,6.5,2],[5.3,1.9,6.4,2],[5.5,2.1,6.8,2],[5,2,5.7,2],
+  [5.1,2.4,5.8,2],[5.3,2.3,6.4,2],[5.5,1.8,6.5,2],[6.7,2.2,7.7,2],[6.9,2.3,7.7,2],[5,1.5,6,2],
+  [5.7,2.3,6.9,2],[4.9,2,5.6,2],[6.7,2,7.7,2],[4.9,1.8,6.3,2],[5.7,2.1,6.7,2],[6,1.8,7.2,2],
+  [4.8,1.8,6.2,2],[4.9,1.8,6.1,2],[5.6,2.1,6.4,2],[5.8,1.6,7.2,2],[6.1,1.9,7.4,2],[6.4,2,7.9,2],
+  [5.6,2.2,6.4,2],[5.1,1.5,6.3,2],[5.6,1.4,6.1,2],[6.1,2.3,7.7,2],[5.6,2.4,6.3,2],[5.5,1.8,6.4,2],
+  [4.8,1.8,6,2],[5.4,2.1,6.9,2],[5.6,2.4,6.7,2],[5.1,2.3,6.9,2],[5.1,1.9,5.8,2],[5.9,2.3,6.8,2],
+  [5.7,2.5,6.7,2],[5.2,2.3,6.7,2],[5,1.9,6.3,2],[5.2,2,6.5,2],[5.4,2.3,6.2,2],[5.1,1.8,5.9,2]
+];
+
+function setMeta(m) {
+  META = m;
+  NAMES = m.classes;
+  for (let c = 0; c < 3; c++) document.getElementById('mn' + c).textContent = cLabel(c);
+}
+
+function selectMode(m) {
+  state.mode = m;
+  document.querySelector('input[name=mode][value="' + m + '"]').checked = true;
+}
+
+// carga Iris: los valores en cm se normalizan por eje (min-max) a [IRIS_M, 1 - IRIS_M]
+function loadIris() {
+  setMeta(META_IRIS);
+  state.points = IRIS_DATA.map(r => ({ x: norm('x', r[0]), y: 1 - norm('y', r[1]), z: norm('z', r[2]), c: r[3] }));
+  state.query = null;
+  state.k = 5;
+  state.showMap = true;
+  state.view3d = false;
+  state.yaw = 0.6;
+  state.pitch = 0.5;
+  state.spin = false;
+  state.qz = norm('z', 5.8);
+  state.follow = true;
+  selectMode(QUERY);
+}
+
 // estado inicial y reinicio: dataset fijo, parametros por defecto
 function resetState() {
+  setMeta(META_DEMO);
   generateDivision(rng(42));
   state.k = 3;
   state.showMap = true;
@@ -853,8 +1017,7 @@ function resetState() {
   state.spin = false;
   state.qz = 0.5;
   state.follow = true;
-  state.mode = 0;
-  document.querySelector('input[name=mode][value="0"]').checked = true;
+  selectMode(0);
 }
 
 resetState();

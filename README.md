@@ -11,11 +11,24 @@ Ejemplo visual del algoritmo k vecinos más cercanos (KNN) en un único archivo 
 5. Con una consulta marcada se dibuja el radio de la vecindad: un círculo punteado centrado en la consulta cuyo radio es la distancia al k-ésimo vecino; su valor aparece en el panel.
 6. La casilla "Vista 3D" cambia a KNN en 3 dimensiones: cada punto tiene una altura z propia (las clases también se separan en altura) y la distancia se calcula con x, y y z. Arrastra para girar 360° (giro completo y vista desde arriba o desde abajo), la rueda cambia k, el doble clic restablece la vista y "Giro automático" rota la escena sola. En 3D la vecindad es una esfera. Los puntos se añaden en la vista 2D.
 7. El deslizador "Altura z" ajusta la altura de la consulta en 3D y la de los puntos nuevos que añadas en 2D. A la altura de la consulta se dibuja un corte coloreado de la frontera de decisión.
-8. Los botones de la sección Datos permiten generar un dataset aleatorio, borrar puntos, quitar la consulta o reiniciar (vuelve al estado inicial: un dataset fijo con 3 zonas separadas en forma de Y y k=3).
+8. Los botones de la sección Datos permiten cargar el caso real Iris, generar un dataset aleatorio, borrar puntos, quitar la consulta o reiniciar (vuelve al estado inicial: un dataset fijo con 3 zonas separadas en forma de Y y k=3).
+9. La interfaz usa tres columnas (lienzo, controles e información) y se adapta al ancho de la ventana.
 
 La precisión leave-one-out indica, para cada punto, si el algoritmo acierta usando los demás puntos del conjunto.
 
-## Ejemplo de uso
+## Caso real: Iris
+
+El botón **Caso real: Iris** carga 150 flores medidas por Fisher (1936), 50 de cada especie (Setosa, Versicolor, Virginica). Fuente: UCI / scikit-learn. Ejes: x = largo del pétalo (cm), y = ancho del pétalo (cm), z = largo del sépalo (cm, solo en 3D). Cada eje se normaliza a [0,1] (mínimo-máximo, con un margen del 9 % en el lienzo) para que pese igual en la distancia. Uso: estimar la especie de una flor a partir de sus medidas comparándola con las 150 conocidas.
+
+Valores medidos con el código de la página; con el ratón las posiciones son aproximadas.
+
+1. Pétalo 1,5 × 0,2 cm: **Setosa** (5 votos de 5 con k = 5).
+2. Pétalo 4,6 × 1,4 cm: **Versicolor** (5 de 5). Pétalo 5,8 × 2,0 cm: **Virginica** (5 de 5).
+3. Zona ambigua, pétalo 4,8 × 1,8 cm: k = 1 → Versicolor; k = 5 → Virginica (4 contra 1); k = 15 → Virginica (12 contra 3).
+4. Precisión leave-one-out (150 flores): k = 1 → 96,0 %; k = 3 → 96,0 %; k = 5 → 96,7 %; k = 9 → 96,0 %; k = 15 → 96,0 %. La diferencia entre k es de una sola flor. Con k = 5 los errores son 0 en Setosa, 2 en Versicolor y 3 en Virginica.
+5. En 3D (añade el sépalo), con k = 3 y la consulta en 4,8 × 1,8: sépalo 5,5 cm → Virginica (3 de 3); sépalo 7,0 cm → Versicolor (3 de 3). Precisión leave-one-out en 3D con k = 3: 96,7 %.
+
+## Ejemplo de uso (dataset de demostración)
 
 Valores medidos con el dataset inicial (botón Reiniciar) y el cursor en el punto indicado; en otro punto los números variarán ligeramente.
 
@@ -60,3 +73,4 @@ Prompts en crudo tal como se escribieron durante la creación del ejemplo:
 15. elimina esto (captura del panel "Ks a comparar", con el botón 3 marcado), añade la opcion de al seleccionar añadir la k, q se muestra con solo arrastras por el mapa. Y por ultimo un ejemplo de uso
 16. por ultimo cambio los colores de la pagina, un estilo mas oscuro
 17. dspues subelo a github y lo conectare a vercel para una demo
+18. hazmelo mas conpacto, no podemos dejar ese espacio a la derecha. Lo has relacionado con un ejemplo de uso real? (con una captura de la interfaz oscura con la parte derecha vacía)
